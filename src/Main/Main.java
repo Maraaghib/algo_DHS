@@ -1,6 +1,7 @@
 package Main;
 
 import jbotsim.Topology;
+import jbotsimx.topology.TopologyGenerator;
 import jbotsimx.ui.JViewer;
 
 public class Main {
@@ -8,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
         Topology t = new Topology();
         t.setDefaultNodeModel(BasicNode.class);
-        t.addNode(new BasicNode());
+        TopologyGenerator.generateRing(t, 7);
         new JViewer(t);
         t.start();
     }

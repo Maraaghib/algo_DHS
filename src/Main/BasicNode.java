@@ -23,7 +23,7 @@ public class BasicNode extends Node {
     private Vector<Integer> readys;
     @Override
     public void onStart() {
-        if(getID() == 1)
+        if(getID() == 0)
         {
             fatherT = getID();
             sendAll(new FloodMessage(getID()));
@@ -68,6 +68,7 @@ public class BasicNode extends Node {
     {
         if(fatherT < 0)
         {
+            System.out.println(getID());
             fatherT = msg.father;
             sendAll(new FloodMessage(getID()));
         }
