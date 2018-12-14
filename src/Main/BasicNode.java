@@ -14,6 +14,7 @@ public class BasicNode extends Node {
     private int currentFragment = -1;
     private int fatherInFragment = -1;
     private int best = -1;
+    private int bestID;
     private int F = -1;
 
     private States state;
@@ -91,14 +92,20 @@ public class BasicNode extends Node {
             send(sender, new FragMessage(currentFragment));
             fragSent = true;
         }
-        border.add(msg.fragmentRoot);
+        border.add(sender.getID());
         //TODO : calculer la distance pour calculer le BEST
         if(best < 0 /*|| dist < best*/)
-        {}
+        {
+            bestID = sender.getID();
+        }
+
+
     }
 
     private void handlePulse(PulseMessage msg)
     {
+        if(state.equals(States.PULSE))
+            return;
         fragSent = false;
         for (Node n: getOutNeighbors()) {
             for (Integer i : sonsInFragment)
@@ -106,6 +113,12 @@ public class BasicNode extends Node {
                     send(n, new FragMessage(currentFragment));
         }
         fragSent = true;
+        for (Node n: getOutNeighbors()) {
+            for (Integer i : sonsInFragment)
+                if (i.equals(n.getID()))
+                    send(n, new PulseMessage());
+        }
+        state = States.PULSE;
     }
 
     private void handleSync(SyncMessage msg)
