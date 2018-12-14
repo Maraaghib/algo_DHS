@@ -1,10 +1,12 @@
 package Main.MessageObjects;
 
+import jbotsim.Node;
+
 public class FragMessage {
 
-    public int fragmentRoot;
+    public Node fragmentRoot;
 
-    public FragMessage(int root)
+    public FragMessage(Node root)
     {
         fragmentRoot = root;
     }
