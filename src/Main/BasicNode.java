@@ -62,6 +62,28 @@ public class BasicNode extends Node {
            for(Node f : sonsInFragment)
                send(f, new ReadyMessage(bestLink, F));
         }
+        if(state.equals(States.READY) && !castReceive)
+        {
+            if(best == this)
+            {
+                for(Map.Entry<Link, Node> entries : border.entrySet())
+                {
+                    Link l = entries.getKey();
+                    if(l.destination == this || l.source == this)
+                    {
+                        Node other = l.destination;
+                        if (other == this)
+                            other = l.source;
+                        if(getID() < other.getID())
+                        {
+                            for(Node n : sonsInFragment)
+                                send(n, new CastMessage(currentFragment));
+                            send(fatherInFragment, new CastMessage(currentFragment));
+                        }
+                    }
+                }
+            }
+        }
         if(state.equals(States.READY) && castReceive)
         {
             if(ready.size() == border.size())
@@ -75,7 +97,7 @@ public class BasicNode extends Node {
                     }
                 }
                 for(Node n : sonsInFragment)
-                    send(n, new CastMessage());
+                    send(n, new CastMessage(currentFragment));
                 state = States.CAST;
             }
         }
