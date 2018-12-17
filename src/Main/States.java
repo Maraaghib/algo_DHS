@@ -4,5 +4,6 @@ public enum States {
     DONE,
     PULSE,
     MIN,
-    READY
+    READY,
+    CAST
 }

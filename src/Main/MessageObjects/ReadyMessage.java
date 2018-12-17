@@ -1,14 +1,15 @@
 package Main.MessageObjects;
 
+import jbotsim.Link;
 import jbotsim.Node;
 
 public class ReadyMessage {
     public Node F;
-    public Node bestNode;
+    public Link edge;
 
-    public ReadyMessage(Node best,Node F)
+    public ReadyMessage(Link edge,Node F)
     {
         this.F = F;
-        bestNode = best;
+        this.edge = edge;
     }
 }

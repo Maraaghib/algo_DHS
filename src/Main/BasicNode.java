@@ -1,9 +1,12 @@
 package Main;
 
 import Main.MessageObjects.*;
+import jbotsim.Link;
 import jbotsim.Message;
 import jbotsim.Node;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 public class BasicNode extends Node {
@@ -14,6 +17,7 @@ public class BasicNode extends Node {
     private Node currentFragment = null;
     private Node fatherInFragment = null;
     private Node best;
+    private Link bestLink;
     private double bestDistance = -1;
     private Node bestRoot;
     private Node F;
@@ -21,8 +25,11 @@ public class BasicNode extends Node {
     private States state;
 
     private Vector<Node> sonsInFragment;
-    private Vector<Node> border;
+    private Map<Link, Node> border;
     private Vector<Integer> ready;
+
+
+    private boolean castReceive = false;
 
     private boolean fragSent = false;
     @Override
@@ -35,7 +42,7 @@ public class BasicNode extends Node {
         currentFragment = this;
         fatherInFragment = this;
         sonsInFragment = new Vector<>();
-        border = new Vector<>();
+        border = new HashMap<>();
         ready = new Vector<>();
         state = States.DONE;
     }
@@ -53,7 +60,24 @@ public class BasicNode extends Node {
         if(state.equals(States.MIN) && fatherInFragment == this)
         {
            for(Node f : sonsInFragment)
-               send(f, new ReadyMessage(best, F));
+               send(f, new ReadyMessage(bestLink, F));
+        }
+        if(state.equals(States.READY) && castReceive)
+        {
+            if(ready.size() == border.size())
+            {
+                for(Map.Entry<Link, Node> entries : border.entrySet())
+                {
+                    if(entries.getKey().destination == this || entries.getKey().source == this)
+                    {
+                        Node n = entries.getValue();
+                        sonsInFragment.add(n);
+                    }
+                }
+                for(Node n : sonsInFragment)
+                    send(n, new CastMessage());
+                state = States.CAST;
+            }
         }
     }
 
@@ -73,6 +97,8 @@ public class BasicNode extends Node {
             handleMin(message);
         else if(content.getClass() == ReadyMessage.class)
             handleReady(message);
+        else if(content.getClass() == CastMessage.class)
+            handleCast(message);
 
     }
 
@@ -106,11 +132,12 @@ public class BasicNode extends Node {
             send(msg.getSender(), new FragMessage(currentFragment));
             fragSent = true;
         }
-        border.add(msg.getSender());
+        border.put(this.getCommonLinkWith(msg.getSender()), msg.getSender());
         if(bestDistance < 0 || distance(msg.getSender()) < bestDistance)
         {
             bestDistance = distance(msg.getSender());
             best = msg.getSender();
+            bestLink = msg.getSender().getCommonLinkWith(this);
             bestRoot = ((FragMessage)msg.getContent()).fragmentRoot;
         }
 
@@ -144,6 +171,7 @@ public class BasicNode extends Node {
         bestDistance = -1;
         ready.clear();
         border.clear();
+        castReceive = false;
 
         if(this == fatherInFragment)
         {
@@ -168,20 +196,28 @@ public class BasicNode extends Node {
 
     private void handleReady(Message msg)
     {
+
         ReadyMessage content = (ReadyMessage)msg.getContent();
         if(msg.getSender().equals(fatherInFragment))
         {
             Node f = content.F;
             if(f == this)
+            {
                 f = F;
+                fatherInFragment = F;
+                sonsInFragment.remove(F);
+            }
 
             for(Node n : sonsInFragment)
-                send(n, new ReadyMessage(best, f));
-            for(Node n : border)
-                send(n, new ReadyMessage(best, f));
+                send(n, new ReadyMessage(bestLink, f));
+            for(Map.Entry<Link, Node> entries : border.entrySet())
+            {
+                Node n = entries.getValue();
+                send(n, new ReadyMessage(bestLink, f));
+            }
 
 
-
+            //currentFragment =
 
             state = States.READY;
         }
@@ -189,5 +225,10 @@ public class BasicNode extends Node {
             //TODO : faire l'ajout de (ab, v) dans ready
             ready.add(3);
         }
+    }
+
+    private void handleCast(Message msg)
+    {
+        castReceive = true;
     }
 }
