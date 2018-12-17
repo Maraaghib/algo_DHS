@@ -50,6 +50,11 @@ public class BasicNode extends Node {
                 send(fatherInFragment, new MinMessage(bestRoot, bestDistance));
             }
         }
+        if(state.equals(States.MIN) && fatherInFragment == this)
+        {
+           for(Node f : sonsInFragment)
+               send(f, new ReadyMessage());
+        }
     }
 
     @Override
@@ -66,6 +71,8 @@ public class BasicNode extends Node {
             handleSync(message);
         else if(content.getClass() == MinMessage.class)
             handleMin(message);
+        else if(content.getClass() == ReadyMessage.class)
+            handleReady(message);
 
     }
 
@@ -154,5 +161,10 @@ public class BasicNode extends Node {
         }
         send(fatherInFragment, new MinMessage(bestRoot, bestDistance));
         state = States.MIN;
+    }
+
+    private void handleReady(Message msg)
+    {
+
     }
 }
