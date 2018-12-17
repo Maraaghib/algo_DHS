@@ -34,7 +34,7 @@ public class BasicNode extends Node {
     private boolean fragSent = false;
     @Override
     public void onStart() {
-        if(getID() == 0)
+        if(getID() == 1)
         {
             fatherT = this;
             sendAll(new FloodMessage(getID()));
@@ -79,6 +79,7 @@ public class BasicNode extends Node {
                             for(Node n : sonsInFragment)
                                 send(n, new CastMessage(currentFragment));
                             send(fatherInFragment, new CastMessage(currentFragment));
+                            send(this, new CastMessage(currentFragment));
                         }
                     }
                 }
@@ -139,11 +140,13 @@ public class BasicNode extends Node {
 
     private void handleFlood(Message msg)
     {
+
         if(fatherT != null)
         {
             System.out.println(getID());
             fatherT = msg.getSender();
             sendAll(new FloodMessage(getID()));
+            send(this, new PulseMessage());
         }
     }
 
@@ -187,6 +190,8 @@ public class BasicNode extends Node {
 
     private void handleSync(Message msg)
     {
+
+
         F = null;
         best = null;
         bestRoot = null;
