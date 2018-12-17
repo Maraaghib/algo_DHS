@@ -22,7 +22,7 @@ public class BasicNode extends Node {
 
     private Vector<Node> sonsInFragment;
     private Vector<Node> border;
-    private Vector<Integer> readys;
+    private Vector<Integer> ready;
 
     private boolean fragSent = false;
     @Override
@@ -36,7 +36,7 @@ public class BasicNode extends Node {
         fatherInFragment = this;
         sonsInFragment = new Vector<>();
         border = new Vector<>();
-        readys = new Vector<>();
+        ready = new Vector<>();
         state = States.DONE;
     }
 
@@ -47,13 +47,13 @@ public class BasicNode extends Node {
         {
             if(sonsInFragment.isEmpty() && currentFragment != this)
             {
-                send(fatherInFragment, new MinMessage(bestRoot, bestDistance));
+                send(fatherInFragment, new MinMessage(bestRoot, best, bestDistance));
             }
         }
         if(state.equals(States.MIN) && fatherInFragment == this)
         {
            for(Node f : sonsInFragment)
-               send(f, new ReadyMessage());
+               send(f, new ReadyMessage(best, F));
         }
     }
 
@@ -142,6 +142,9 @@ public class BasicNode extends Node {
         best = null;
         bestRoot = null;
         bestDistance = -1;
+        ready.clear();
+        border.clear();
+
         if(this == fatherInFragment)
         {
             for(Node sons : sonsInFragment)
@@ -156,15 +159,35 @@ public class BasicNode extends Node {
         {
             bestRoot = msgContent.bestFragment;
             bestDistance = msgContent.distance;
-            best = null;
+            best = msgContent.bestNode;
             F = msg.getSender();
         }
-        send(fatherInFragment, new MinMessage(bestRoot, bestDistance));
+        send(fatherInFragment, new MinMessage(bestRoot, best, bestDistance));
         state = States.MIN;
     }
 
     private void handleReady(Message msg)
     {
+        ReadyMessage content = (ReadyMessage)msg.getContent();
+        if(msg.getSender().equals(fatherInFragment))
+        {
+            Node f = content.F;
+            if(f == this)
+                f = F;
 
+            for(Node n : sonsInFragment)
+                send(n, new ReadyMessage(best, f));
+            for(Node n : border)
+                send(n, new ReadyMessage(best, f));
+
+
+
+
+            state = States.READY;
+        }
+        else{
+            //TODO : faire l'ajout de (ab, v) dans ready
+            ready.add(3);
+        }
     }
 }

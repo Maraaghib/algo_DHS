@@ -5,11 +5,13 @@ import jbotsim.Node;
 public class MinMessage {
 
     public Node bestFragment;
+    public Node bestNode;
     public double distance;
 
-    public MinMessage (Node best, double dist)
+    public MinMessage (Node bestFragment, Node bestNode, double dist)
     {
-        bestFragment = best;
+        this.bestFragment = bestFragment;
+        this.bestNode = bestNode;
         distance = dist;
 
     }

@@ -3,5 +3,6 @@ package Main;
 public enum States {
     DONE,
     PULSE,
-    MIN
+    MIN,
+    READY
 }
