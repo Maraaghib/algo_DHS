@@ -13,8 +13,9 @@ public class BasicNode extends Node {
     //tree we want to build
     private Node currentFragment = null;
     private Node fatherInFragment = null;
-    private int best = -1;
-    private int bestID;
+    private Node best;
+    private double bestDistance = -1;
+    private Node bestRoot;
     private Node F;
 
     private States state;
@@ -44,9 +45,9 @@ public class BasicNode extends Node {
         // code to be executed by this node in each round
         if(state.equals(States.PULSE))
         {
-            if(sonsInFragment.isEmpty())
+            if(sonsInFragment.isEmpty() && currentFragment != this)
             {
-                System.out.println("remve This");
+                send(fatherInFragment, new MinMessage(bestRoot, bestDistance));
             }
         }
     }
@@ -99,10 +100,11 @@ public class BasicNode extends Node {
             fragSent = true;
         }
         border.add(msg.getSender());
-        //TODO : calculer la distance pour calculer le BEST
-        if(best < 0 /*|| dist < best*/)
+        if(bestDistance < 0 || distance(msg.getSender()) < bestDistance)
         {
-            bestID = msg.getSender().getID();
+            bestDistance = distance(msg.getSender());
+            best = msg.getSender();
+            bestRoot = ((FragMessage)msg.getContent()).fragmentRoot;
         }
 
 
@@ -129,6 +131,10 @@ public class BasicNode extends Node {
 
     private void handleSync(Message msg)
     {
+        F = null;
+        best = null;
+        bestRoot = null;
+        bestDistance = -1;
         if(this == fatherInFragment)
         {
             for(Node sons : sonsInFragment)
@@ -138,6 +144,15 @@ public class BasicNode extends Node {
 
     private void handleMin(Message msg)
     {
-
+        MinMessage msgContent = (MinMessage)msg.getContent();
+        if(msgContent.distance < bestDistance)
+        {
+            bestRoot = msgContent.bestFragment;
+            bestDistance = msgContent.distance;
+            best = null;
+            F = msg.getSender();
+        }
+        send(fatherInFragment, new MinMessage(bestRoot, bestDistance));
+        state = States.MIN;
     }
 }
