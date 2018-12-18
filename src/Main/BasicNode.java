@@ -50,6 +50,7 @@ public class BasicNode extends Node {
     @Override
     public void onClock() {
         // code to be executed by this node in each round
+    	//4
         if(state.equals(States.PULSE))
         {
             if(sonsInFragment.isEmpty() && currentFragment != this)
@@ -57,11 +58,15 @@ public class BasicNode extends Node {
                 send(fatherInFragment, new MinMessage(bestRoot, best, bestDistance));
             }
         }
+        
+        //6
         if(state.equals(States.MIN) && fatherInFragment == this)
         {
            for(Node f : sonsInFragment)
                send(f, new ReadyMessage(bestLink, F));
         }
+        
+        //8
         if(state.equals(States.READY) && !castReceive)
         {
             if(best == this)
@@ -85,6 +90,8 @@ public class BasicNode extends Node {
                 }
             }
         }
+        
+        //9
         if(state.equals(States.READY) && castReceive)
         {
             if(ready.size() == border.size())
@@ -122,6 +129,8 @@ public class BasicNode extends Node {
             handleReady(message);
         else if(content.getClass() == CastMessage.class)
             handleCast(message);
+        else if(content.getClass() == CastMessage.class)
+        	handleDone(message);
 
     }
 
@@ -243,12 +252,13 @@ public class BasicNode extends Node {
                 send(n, new ReadyMessage(bestLink, f));
             }
 
-
+            // 7.3
             //currentFragment =
 
             state = States.READY;
         }
         else{
+        	// 8
             //TODO : faire l'ajout de (ab, v) dans ready
             ready.add(3);
         }
@@ -257,5 +267,9 @@ public class BasicNode extends Node {
     private void handleCast(Message msg)
     {
         castReceive = true;
+    }
+    
+    private void handleDone(Message msg) {
+    	// 11
     }
 }
