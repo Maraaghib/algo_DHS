@@ -29,7 +29,10 @@ public class BasicNode extends Node {
     private Vector<Integer> ready;
 
 
-    private boolean castReceive = false;
+    private boolean syncReceived = false;
+    private int numberOfSync = 0;
+    private static int maxID = -1;
+    private boolean castReceived = false;
 
     private boolean fragSent = false;
     @Override
@@ -44,7 +47,10 @@ public class BasicNode extends Node {
         {
             fatherT = this;
             sendAll(new FloodMessage(getID()));
+            sendAll(new SyncMessage());
         }
+        if(getID() > maxID)
+            maxID = getID();
     }
 
     @Override
@@ -66,8 +72,7 @@ public class BasicNode extends Node {
                send(f, new ReadyMessage(bestLink, F));
         }
         
-        //8
-        if(state.equals(States.READY) && !castReceive)
+        if(state.equals(States.READY) && !castReceived)
         {
             if(best == this)
             {
@@ -92,7 +97,7 @@ public class BasicNode extends Node {
         }
         
         //9
-        if(state.equals(States.READY) && castReceive)
+        if(state.equals(States.READY) && castReceived)
         {
             if(ready.size() == border.size())
             {
@@ -108,6 +113,12 @@ public class BasicNode extends Node {
                     send(n, new CastMessage(currentFragment));
                 state = States.CAST;
             }
+        }
+
+        if(numberOfSync == maxID)
+        {
+            syncReceived = false;
+            numberOfSync = 0;
         }
     }
 
@@ -154,7 +165,6 @@ public class BasicNode extends Node {
         {
             fatherT = msg.getSender();
             sendAll(new FloodMessage(getID()));
-            send(this, new PulseMessage());
         }
     }
 
@@ -199,20 +209,27 @@ public class BasicNode extends Node {
     private void handleSync(Message msg)
     {
 
-
-        F = null;
-        best = null;
-        bestRoot = null;
-        bestDistance = -1;
-        ready.clear();
-        border.clear();
-        castReceive = false;
-
-        if(this == fatherInFragment)
+        if(!syncReceived)
         {
-            for(Node sons : sonsInFragment)
+            syncReceived = true;
+            numberOfSync ++;
+
+            F = null;
+            best = null;
+            bestRoot = null;
+            bestDistance = -1;
+            ready.clear();
+            border.clear();
+            castReceived = false;
+
+            if(this == fatherInFragment)
+            {
+                for(Node sons : sonsInFragment)
                     send(sons, new PulseMessage());
+            }
+            sendAll(new SyncMessage());
         }
+
     }
 
     private void handleMin(Message msg)
@@ -265,7 +282,7 @@ public class BasicNode extends Node {
 
     private void handleCast(Message msg)
     {
-        castReceive = true;
+        castReceived = true;
     }
     
     private void handleDone(Message msg) {
