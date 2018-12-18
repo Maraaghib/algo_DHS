@@ -34,17 +34,17 @@ public class BasicNode extends Node {
     private boolean fragSent = false;
     @Override
     public void onStart() {
-        if(getID() == 1)
-        {
-            fatherT = this;
-            sendAll(new FloodMessage(getID()));
-        }
         currentFragment = this;
         fatherInFragment = this;
         sonsInFragment = new Vector<>();
         border = new HashMap<>();
         ready = new Vector<>();
         state = States.DONE;
+        if(getID() == 1)
+        {
+            fatherT = this;
+            sendAll(new FloodMessage(getID()));
+        }
     }
 
     @Override
@@ -129,7 +129,7 @@ public class BasicNode extends Node {
             handleReady(message);
         else if(content.getClass() == CastMessage.class)
             handleCast(message);
-        else if(content.getClass() == CastMessage.class)
+        else if(content.getClass() == DoneMessage.class)
         	handleDone(message);
 
     }
@@ -150,9 +150,8 @@ public class BasicNode extends Node {
     private void handleFlood(Message msg)
     {
 
-        if(fatherT != null)
+        if(fatherT == null)
         {
-            System.out.println(getID());
             fatherT = msg.getSender();
             sendAll(new FloodMessage(getID()));
             send(this, new PulseMessage());
@@ -270,6 +269,22 @@ public class BasicNode extends Node {
     }
     
     private void handleDone(Message msg) {
-    	// 11
+    	DoneMessage content = (DoneMessage)msg.getContent();
+
+    	if(fatherT != this)
+        {
+            int id = currentFragment.getID();
+            if(content.f1 > id)
+                content.f1 = id;
+            if(content.f2 < id)
+                content.f2 = id;
+
+            send(fatherT, content);
+        }
+        else{
+            if(content.f1 != content.f2)
+                sendAll(new SyncMessage());
+        }
+
     }
 }
