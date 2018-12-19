@@ -70,7 +70,7 @@ public class BasicNode extends Node {
                 handleMin(m);
             }
         }
-        
+
         //6
         if(state.equals(States.MIN) && fatherInFragment == this)
         {
@@ -81,7 +81,7 @@ public class BasicNode extends Node {
                handleReady(new Message(new ReadyMessage(bestLink, F)));
            }
         }
-        
+
         if(state.equals(States.READY) && !castReceived)
         {
 
@@ -106,7 +106,7 @@ public class BasicNode extends Node {
                 }
             }
         }
-        
+
         //9
         if(state.equals(States.READY) && castReceived)
         {
@@ -209,7 +209,7 @@ public class BasicNode extends Node {
         fragSent = false;
         for (Node n: getNeighbors()) {
             for (Node i : sonsInFragment)
-                if (!i.equals(n) || !(fatherInFragment.equals(n)))
+                if (!(i.equals(n)) && !(fatherInFragment.equals(n)))
                     send(n, new FragMessage(currentFragment));
             if(sonsInFragment.isEmpty())
                 send(n, new FragMessage(currentFragment));
@@ -238,6 +238,7 @@ public class BasicNode extends Node {
             border.clear();
             castReceived = false;
 
+            // 2
             if(this == fatherInFragment)
             {
                 for(Node sons : sonsInFragment)
@@ -304,7 +305,7 @@ public class BasicNode extends Node {
             currentFragment = ((CastMessage)msg.getContent()).fragment;
         castReceived = true;
     }
-    
+
     private void handleDone(Message msg) {
         System.out.println("done");
 
