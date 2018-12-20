@@ -32,12 +32,14 @@ public class BasicNode extends Node {
 
     private boolean syncReceived = false;
     private static int numberOfSync = 0;
+    private static int numberFinished = 0;
     private static int maxID = -1;
     private boolean castReceived = false;
     private boolean willNotReceiveCast = false;
     private boolean wentToReadyOnce = false;
     private boolean readyToStartAgain = true;
     private boolean doneReceived = false;
+
 
     private boolean fragSent = false;
     @Override
@@ -61,11 +63,11 @@ public class BasicNode extends Node {
     public void onClock() {
         // code to be executed by this node in each round
     	//4
-        getMailbox();
         if(readyToStartAgain && fatherT == this)
         {
             readyToStartAgain = false;
             sendAll(new SyncMessage());
+            System.out.println("stoppen");
         }
 
         if(state.equals(States.PULSE) && best!=null)
@@ -123,6 +125,7 @@ public class BasicNode extends Node {
                     }
                 }
             }
+            getMailbox();
             if(!castReceived)
                 willNotReceiveCast = true;
             wentToReadyOnce = true;
@@ -148,13 +151,21 @@ public class BasicNode extends Node {
                 state = States.CAST;
                 bestLink.setWidth(2);
                 bestLink.setColor(Color.RED);
-
+                numberFinished++;
             }
         }
 
-        if(state.equals(States.READY) && willNotReceiveCast && wentToReadyOnce)
+
+        if(state.equals(States.ROUND_FINISHED))
         {
-            //send(fatherT, new DoneMessage(currentFragment.getID(), currentFragment.getID()));
+            syncReceived = false;
+            send(fatherT, new DoneMessage(currentFragment.getID(), currentFragment.getID()));
+            state = States.DONE;
+        }
+        else if(numberFinished == maxID +1 && state!=States.DONE)
+        {
+
+            state = States.ROUND_FINISHED;
         }
 
     }
@@ -179,6 +190,7 @@ public class BasicNode extends Node {
             handleCast(message);
         else if(content.getClass() == DoneMessage.class)
         	handleDone(message);
+
 
     }
 
@@ -228,7 +240,6 @@ public class BasicNode extends Node {
 
     private void handlePulse(Message msg)
     {
-
         //Si on recoit pulse mais qu'on est deja dans l'état pulse, on a déja fait les actions
         //donc on ne fait rien
         if(state.equals(States.PULSE))
@@ -266,6 +277,7 @@ public class BasicNode extends Node {
             border.clear();
             castReceived = false;
             willNotReceiveCast = false;
+            numberFinished = 0;
 
 
 
@@ -351,12 +363,7 @@ public class BasicNode extends Node {
     }
 
     private void handleDone(Message msg) {
-
-        if(doneReceived)
-            return;
         DoneMessage content = (DoneMessage)msg.getContent();
-
-        state = States.DONE;
 
     	if(fatherT != this)
         {
@@ -372,7 +379,6 @@ public class BasicNode extends Node {
                 readyToStartAgain = true;
         }
 
-        doneReceived = true;
     }
 
     public BasicNode clone()

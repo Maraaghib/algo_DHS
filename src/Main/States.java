@@ -5,5 +5,6 @@ public enum States {
     PULSE,
     MIN,
     READY,
-    CAST
+    CAST,
+    ROUND_FINISHED
 }
