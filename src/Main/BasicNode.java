@@ -34,6 +34,9 @@ public class BasicNode extends Node {
     private int numberOfSync = 0;
     private static int maxID = -1;
     private boolean castReceived = false;
+    private boolean willNotReceiveCast = false;
+    private boolean wentToReadyOnce = false;
+    private boolean readyToStartAgain = true;
 
     private boolean fragSent = false;
     @Override
@@ -48,7 +51,6 @@ public class BasicNode extends Node {
         {
             fatherT = this;
             sendAll(new FloodMessage(getID()));
-            sendAll(new SyncMessage());
         }
         if(getID() > maxID)
             maxID = getID();
@@ -58,6 +60,13 @@ public class BasicNode extends Node {
     public void onClock() {
         // code to be executed by this node in each round
     	//4
+        getMailbox();
+        if(readyToStartAgain)
+        {
+            readyToStartAgain = false;
+            sendAll(new SyncMessage());
+        }
+
         if(state.equals(States.PULSE) && best!=null)
         {
             if(sonsInFragment.isEmpty() && currentFragment != this)
@@ -66,26 +75,27 @@ public class BasicNode extends Node {
             }
             if(sonsInFragment.isEmpty() && currentFragment == this && fatherInFragment == this)
             {
-                Message m = new Message(new MinMessage(bestRoot, best, bestDistance));
-                handleMin(m);
+               state = States.MIN;
+               F = this;
             }
         }
 
         //6
         if(state.equals(States.MIN) && fatherInFragment == this)
         {
-           for(Node f : sonsInFragment)
-               send(f, new ReadyMessage(bestLink, F));
-           if(sonsInFragment.isEmpty()){
-               state = States.READY;
-               handleReady(new Message(new ReadyMessage(bestLink, F)));
-           }
+            fatherInFragment = F;
+            for(Node f : sonsInFragment)
+                send(f, new ReadyMessage(bestLink, F));
+            if(sonsInFragment.isEmpty()){
+                state = States.READY;
+                handleReady(new Message(new ReadyMessage(bestLink, F)));
+            }
         }
 
         if(state.equals(States.READY) && !castReceived)
         {
 
-            if(best.equals(this))
+            if(bestLink.destination == this || bestLink.source == this)
             {
                 for(Map.Entry<Link, Node> entries : border.entrySet())
                 {
@@ -105,11 +115,15 @@ public class BasicNode extends Node {
                     }
                 }
             }
+            if(!castReceived)
+                willNotReceiveCast = true;
+            wentToReadyOnce = true;
         }
 
         //9
         if(state.equals(States.READY) && castReceived)
         {
+            willNotReceiveCast = false;
             if(ready.size() == border.size())
             {
                 for(Map.Entry<Link, Node> entries : border.entrySet())
@@ -123,15 +137,16 @@ public class BasicNode extends Node {
                 for(Node n : sonsInFragment)
                     send(n, new CastMessage(currentFragment));
                 state = States.CAST;
-                bestLink.setColor(new Color(0, 0, 255));
+                bestLink.setWidth(2);
+                bestLink.setColor(Color.RED);
             }
         }
 
-        if(numberOfSync == maxID)
+        if(state.equals(States.READY) && willNotReceiveCast && wentToReadyOnce)
         {
-            syncReceived = false;
-            numberOfSync = 0;
+            send(fatherT, new DoneMessage(currentFragment.getID(), currentFragment.getID()));
         }
+
     }
 
     @Override
@@ -189,10 +204,10 @@ public class BasicNode extends Node {
         border.put(this.getCommonLinkWith(msg.getSender()), msg.getSender());
         if(bestDistance < 0 || distance(msg.getSender()) < bestDistance)
         {
-            bestDistance = distance(msg.getSender());
-            best = msg.getSender();
-            bestLink = msg.getSender().getCommonLinkWith(this);
-            bestRoot = ((FragMessage)msg.getContent()).fragmentRoot;
+            this.bestDistance = distance(msg.getSender());
+            this.best = msg.getSender();
+            this.bestLink = msg.getSender().getCommonLinkWith(this);
+            this.bestRoot = ((FragMessage)msg.getContent()).fragmentRoot;
         }
 
 
@@ -200,7 +215,6 @@ public class BasicNode extends Node {
 
     private void handlePulse(Message msg)
     {
-        System.out.println("pulse");
         //Si on recoit pulse mais qu'on est deja dans l'état pulse, on a déja fait les actions
         //donc on ne fait rien
         if(state.equals(States.PULSE))
@@ -237,6 +251,9 @@ public class BasicNode extends Node {
             ready.clear();
             border.clear();
             castReceived = false;
+            willNotReceiveCast = false;
+
+            state = States.DONE;
 
             // 2
             if(this == fatherInFragment)
@@ -253,7 +270,7 @@ public class BasicNode extends Node {
     private void handleMin(Message msg)
     {
         MinMessage msgContent = (MinMessage)msg.getContent();
-        System.out.println(msgContent.distance);
+        System.out.println("min");
 
         if(msgContent.distance < bestDistance)
         {
@@ -264,13 +281,16 @@ public class BasicNode extends Node {
         }
         send(fatherInFragment, new MinMessage(bestRoot, best, bestDistance));
         state = States.MIN;
+
     }
 
     private void handleReady(Message msg)
     {
+
         ReadyMessage content = (ReadyMessage)msg.getContent();
-        if(msg.getSender() == fatherInFragment)
+        if(msg.getSender() == fatherInFragment || msg.getSender() == null)
         {
+
             Node f = content.F;
             if(f == this)
             {
@@ -300,16 +320,16 @@ public class BasicNode extends Node {
 
     private void handleCast(Message msg)
     {
-        System.out.println("cast");
         if(!castReceived)
             currentFragment = ((CastMessage)msg.getContent()).fragment;
         castReceived = true;
     }
 
     private void handleDone(Message msg) {
-        System.out.println("done");
+        DoneMessage content = (DoneMessage)msg.getContent();
 
-    	/*DoneMessage content = (DoneMessage)msg.getContent();
+        syncReceived = false;
+        numberOfSync = 0;
 
     	if(fatherT != this)
         {
@@ -323,8 +343,8 @@ public class BasicNode extends Node {
         }
         else{
             if(content.f1 != content.f2)
-                sendAll(new SyncMessage());
-        }*/
+                readyToStartAgain = true;
+        }
 
     }
 
